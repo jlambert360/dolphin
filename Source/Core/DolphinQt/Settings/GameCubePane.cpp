@@ -102,6 +102,7 @@ void GameCubePane::CreateWidgets()
         std::make_pair(tr("GCI Folder"), ExpansionInterface::EXIDEVICE_MEMORYCARDFOLDER),
         std::make_pair(tr("USB Gecko"), ExpansionInterface::EXIDEVICE_GECKO),
         std::make_pair(tr("Advance Game Port"), ExpansionInterface::EXIDEVICE_AGP),
+        std::make_pair(tr("Brawlback"), ExpansionInterface::EXIDEVICE_BRAWLBACK),
         std::make_pair(tr("Microphone"), ExpansionInterface::EXIDEVICE_MIC)})
   {
     m_slot_combos[0]->addItem(entry.first, entry.second);
