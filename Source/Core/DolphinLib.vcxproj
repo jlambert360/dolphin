@@ -29,10 +29,13 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Core\Brawlback\Savestate.cpp" />
+    <ClCompile Include="Core\Brawlback\SlippiUtility.cpp" />
     <ClCompile Include="Core\HW\EXI\EXIBrawlback.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Core\Brawlback\Brawltypes.h" />
     <ClInclude Include="Core\Brawlback\Savestate.h" />
+    <ClInclude Include="Core\Brawlback\SlippiUtility.h" />
     <ClInclude Include="Core\HW\EXI\EXIBrawlback.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
