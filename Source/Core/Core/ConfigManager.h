@@ -131,6 +131,10 @@ struct SConfig
   // Interface settings
   bool bConfirmStop = false;
 
+
+  bool bQoSEnabled = true;
+
+
   enum class ShowCursor
   {
     Never,

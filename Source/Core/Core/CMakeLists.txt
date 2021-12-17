@@ -583,6 +583,7 @@ PUBLIC
   videonull
   videoogl
   videosoftware
+  GGPO
 
 PRIVATE
   fmt::fmt
