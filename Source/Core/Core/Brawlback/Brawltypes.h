@@ -22,7 +22,7 @@ enum PADButtonBits : u16
 union PADButtons
 {
   unsigned short bits;
-  struct
+  /*struct
   {
     unsigned _none : 3;
     unsigned Start : 1;
@@ -38,12 +38,11 @@ union PADButtons
     unsigned DownDPad : 1;
     unsigned RightDPad : 1;
     unsigned LeftDPad : 1;
-  };
+  };*/
 };
 #pragma pack(pop)
 
-// todo - replace this with my own struct that doesn't have spacers, 
-// and just fill in those values on game side so i'm not transferring more data than i necessary
+
 #pragma pack(push, 4)
 struct gfPadGamecube
 {
@@ -82,3 +81,24 @@ struct gfPadGamecube
   }
 };
 #pragma pack(pop)
+
+
+struct BrawlbackPad {
+    unsigned short buttons;
+    char stickX;
+    char stickY;
+    char cStickX;
+    char cStickY;
+    char LTrigger;
+    char RTrigger;
+
+    BrawlbackPad() {
+        buttons = 0;
+        stickX = 0;
+        stickY = 0;
+        cStickX = 0;
+        cStickY = 0;
+        LTrigger = 0;
+        RTrigger = 0;
+    }
+};

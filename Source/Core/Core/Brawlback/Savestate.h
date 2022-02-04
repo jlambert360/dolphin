@@ -12,7 +12,7 @@ class BrawlbackSavestate
 public:
 
 
-    BrawlbackSavestate(u32 frame);
+    BrawlbackSavestate();
     ~BrawlbackSavestate();
 
 
@@ -20,8 +20,6 @@ public:
     void Load(std::vector<PreserveBlock> blocks);
 
     //static bool shouldForceInit;
-
-    u32 frame = 0;
 
 private:
 
@@ -34,6 +32,9 @@ private:
 
 
     void initBackupLocs();
+
+    //std::thread firstHalf;
+    //std::thread secondHalf;
 
 
 };

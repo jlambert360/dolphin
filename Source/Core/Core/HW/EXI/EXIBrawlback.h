@@ -9,26 +9,7 @@
 #include "Core/Brawlback/Netplay/Netplay.h"
 #include "Core/Brawlback/TimeSync.h"
 
-/* NOTES:
-
-Possible todo:
-Adapt what slippi does and don't limit the size of input queues by some fixed amount.
-Slippi's input queues grow and shrink depending on how much ping there is, and hence, how
-many inputs need to be stored.
-
-
-
-
-
-*/
-
-
 using namespace Brawlback;
-
-
-typedef std::pair<void*, u32> Buffer;
-typedef std::deque<std::unique_ptr<Match::PlayerFrameData>> PlayerFrameDataQueue;
-
 
 class CEXIBrawlback : public ExpansionInterface::IEXIDevice
 {
@@ -74,6 +55,7 @@ private:
     ENetHost* server = nullptr;
     std::thread netplay_thread;
     std::unique_ptr<BrawlbackNetplay> netplay;
+    bool isConnected = false;
     // -------------------------------
 
 
@@ -95,8 +77,9 @@ private:
 
     
     // --- Rollback
-    int numFramesWithoutRemoteInputs = 0;
     Match::RollbackInfo rollbackInfo = Match::RollbackInfo();
+    void SetupRollback(u32 frame);
+    void HandleLocalInputsDuringPrediction(u32 frame, u8 playerIdx);
     // -------------------------------
 
 
@@ -105,31 +88,24 @@ private:
     // --- Savestates
     std::deque<std::unique_ptr<BrawlbackSavestate>> savestates = {};
     std::unordered_map<u32, BrawlbackSavestate*> savestatesMap = {};
+
+    std::map<s32, std::unique_ptr<BrawlbackSavestate>> activeSavestates = {};
+	std::deque<std::unique_ptr<BrawlbackSavestate>> availableSavestates = {};
     // -------------------------------
     
 
     // --- Framedata (player inputs)
     void handleSendInputs(u32 frame);
     std::pair<bool, bool> getInputsForGame(Match::FrameData& framedataToSendToGame, u32 frame);
-    void storeLocalInputs(Match::PlayerFrameData* localPlayerFramedata, u32 frame);
+    void storeLocalInputs(Match::PlayerFrameData* localPlayerFramedata);
     PlayerFrameDataQueue localPlayerFrameData = {};
+    //std::unordered_map<u32, Match::PlayerFrameData*> localPlayerFrameDataMap = {};
+
     // indexes are player indexes
     std::array<PlayerFrameDataQueue, MAX_NUM_PLAYERS> remotePlayerFrameData = {};
     // array of players - key is current frame, val is ptr to that frame's (player) framedata
     std::array<std::unordered_map<u32, Match::PlayerFrameData*>, MAX_NUM_PLAYERS> remotePlayerFrameDataMap = {};
-
-    std::array<bool, MAX_NUM_PLAYERS> hasRemoteInputsThisFrame = {false, false, false, false}; // tmp - for debugging
     // -------------------------------
-
-
-    // --- Mutexes
-    std::mutex read_queue_mutex;
-    std::mutex remotePadQueueMutex;
-    std::mutex localPadQueueMutex;
-    std::mutex ackTimersMutex;
-    // -------------------------------
-
-
 
 
 
