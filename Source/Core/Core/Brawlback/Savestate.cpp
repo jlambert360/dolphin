@@ -222,7 +222,7 @@ void BrawlbackSavestate::initBackupLocs()
         for (auto& loc : this->backupLocs) {
             u32 size = loc.endAddress-loc.startAddress;
             double newsize = ((double)size / 1000.0) / 1000.0;
-            INFO_LOG(BRAWLBACK, "Savestate region: %p - %p : size %f mb   %s\n", loc.startAddress, loc.endAddress, newsize, loc.regionName.c_str());
+            INFO_LOG(BRAWLBACK, "Savestate region: 0x%x - 0x%x : size %f mb   %s\n", loc.startAddress, loc.endAddress, newsize, loc.regionName.c_str());
             totalsize += size;
         }
         double dsize = ((double)totalsize / 1000.0) / 1000.0;
