@@ -99,6 +99,7 @@ void SConfig::SaveSettings()
   SaveUSBPassthroughSettings(ini);
   SaveAutoUpdateSettings(ini);
   SaveJitDebugSettings(ini);
+  SaveBrawlbackSettings(ini);
 
   ini.Save(File::GetUserPath(F_DOLPHINCONFIG_IDX));
 
@@ -321,6 +322,16 @@ void SConfig::SaveJitDebugSettings(IniFile& ini)
   section->Set("JitRegisterCacheOff", bJITRegisterCacheOff);
 }
 
+void SConfig::SaveBrawlbackSettings(IniFile& ini) {
+    IniFile::Section* brawlback = ini.GetOrCreateSection("Brawlback");
+
+    brawlback->Set("DelayFrames", m_delayFrames);
+    brawlback->Set("ForceCustomNetplayPort", m_slippiForceNetplayPort);
+    brawlback->Set("CustomNetplayPort", m_slippiNetplayPort);
+    brawlback->Set("ForceLanIP", m_slippiForceLanIp);
+    brawlback->Set("LanIP", m_slippiLanIp);
+}
+
 void SConfig::LoadSettings()
 {
   Config::Load();
@@ -340,6 +351,7 @@ void SConfig::LoadSettings()
   LoadUSBPassthroughSettings(ini);
   LoadAutoUpdateSettings(ini);
   LoadJitDebugSettings(ini);
+  LoadBrawlbackSettings(ini);
 }
 
 void SConfig::LoadGeneralSettings(IniFile& ini)
@@ -571,6 +583,16 @@ void SConfig::LoadJitDebugSettings(IniFile& ini)
   section->Get("JitSystemRegistersOff", &bJITSystemRegistersOff, false);
   section->Get("JitBranchOff", &bJITBranchOff, false);
   section->Get("JitRegisterCacheOff", &bJITRegisterCacheOff, false);
+}
+
+void SConfig::LoadBrawlbackSettings(IniFile& ini) {
+    IniFile::Section* brawlback = ini.GetOrCreateSection("Brawlback");
+
+    brawlback->Get("DelayFrames", &m_delayFrames, 2);
+    brawlback->Get("ForceCustomNetplayPort", &m_slippiForceNetplayPort, false);
+    brawlback->Get("CustomNetplayPort", &m_slippiNetplayPort, 7779);
+    brawlback->Get("ForceLanIP", &m_slippiForceLanIp, false);
+    brawlback->Get("LanIP", &m_slippiLanIp, "");
 }
 
 void SConfig::ResetRunningGameMetadata()

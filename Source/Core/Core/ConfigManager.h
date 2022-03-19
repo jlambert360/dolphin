@@ -112,12 +112,13 @@ struct SConfig
 	int m_slippiNetplayPort;
 	bool m_slippiForceLanIp = false;
 	bool m_slippiCustomMMEnabled = true;
-	std::string m_slippiCustomMMServerURL = "165.227.213.180";
+	std::string m_slippiCustomMMServerURL = "lylat.gg";
 	std::string m_slippiCustomMMReportingURL = "https://lylat.gg/reports";
 	std::string m_slippiLanIp = "";
 	bool m_meleeUserIniBootstrapped = false;
 	bool m_blockingPipes = false;
 	bool m_coutEnabled = false;
+    int m_delayFrames = 2;
 
   int iTimingVariance = 40;  // in milli secounds
   bool bCPUThread = true;
@@ -339,6 +340,7 @@ private:
   void SaveUSBPassthroughSettings(IniFile& ini);
   void SaveAutoUpdateSettings(IniFile& ini);
   void SaveJitDebugSettings(IniFile& ini);
+  void SaveBrawlbackSettings(IniFile& ini);
 
   void LoadGeneralSettings(IniFile& ini);
   void LoadInterfaceSettings(IniFile& ini);
@@ -351,6 +353,7 @@ private:
   void LoadUSBPassthroughSettings(IniFile& ini);
   void LoadAutoUpdateSettings(IniFile& ini);
   void LoadJitDebugSettings(IniFile& ini);
+  void LoadBrawlbackSettings(IniFile& ini);
 
   void SetRunningGameMetadata(const std::string& game_id, const std::string& gametdb_id,
                               u64 title_id, u16 revision, DiscIO::Region region);

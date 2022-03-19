@@ -1,4 +1,4 @@
-#include "SlippiMatchmaking.h"
+#include "Core/Brawlback/Netplay/Matchmaking.h"
 #include "Common/Common.h"
 #include "Common/ENetUtil.h"
 #include "Common/Logging/Log.h"
@@ -15,6 +15,8 @@
 #elif defined _WIN32
 #endif
 
+// NOTE: Heavily derived from Slippi's Matchmaking class/logic.
+
 const std::string scm_slippi_semver_str = "Brawlback - dev";
 
 class MmMessageType
@@ -29,7 +31,7 @@ std::string MmMessageType::CREATE_TICKET = "create-ticket";
 std::string MmMessageType::CREATE_TICKET_RESP = "create-ticket-resp";
 std::string MmMessageType::GET_TICKET_RESP = "get-ticket-resp";
 
-SlippiMatchmaking::SlippiMatchmaking(UserInfo user)
+Matchmaking::Matchmaking(UserInfo user)
 {
 	//this->isMex = SConfig::GetInstance().m_slippiCustomMMEnabled && isMex;
 
@@ -40,11 +42,11 @@ SlippiMatchmaking::SlippiMatchmaking(UserInfo user)
 	m_client = nullptr;
 	m_server = nullptr;
 
-	MM_HOST = getSlippiMMHost();
+	MM_HOST = getDefaultMMHost();
 	generator = std::default_random_engine(Common::Timer::GetTimeMs());
 }
 
-SlippiMatchmaking::~SlippiMatchmaking()
+Matchmaking::~Matchmaking()
 {
 	m_state = ProcessState::ERROR_ENCOUNTERED;
 	m_errorMsg = "Matchmaking shut down";
@@ -60,7 +62,7 @@ SlippiMatchmaking::~SlippiMatchmaking()
  * for Vanilla Melee
  * @return
  */
-std::string SlippiMatchmaking::getSlippiMMHost()
+std::string Matchmaking::getDefaultMMHost()
 {
 	auto prodUrl = MM_HOST_PROD;
 	auto devUrl = MM_HOST_DEV;
@@ -72,7 +74,7 @@ std::string SlippiMatchmaking::getSlippiMMHost()
  * for MEX-type games
  * @return
  */
-std::string SlippiMatchmaking::getMexMMHost()
+std::string Matchmaking::getMexMMHost()
 {
 	auto prodUrl = SConfig::GetInstance().m_slippiCustomMMServerURL;
 	auto devUrl = MM_HOST_DEV;
@@ -86,10 +88,10 @@ std::string SlippiMatchmaking::getMexMMHost()
  * All other modes will fallback to Slippi's servers
  * @return
  */
-std::string SlippiMatchmaking::getMMHostForSearchMode()
+std::string Matchmaking::getMMHostForSearchMode()
 {
-	//bool isMexMode = SlippiMatchmaking::IsMexMode(this->isMex, this->m_searchSettings.mode);
-	//return isMexMode ? getMexMMHost() : getSlippiMMHost();
+	//bool isMexMode = Matchmaking::IsMexMode(this->isMex, this->m_searchSettings.mode);
+	//return isMexMode ? getMexMMHost() : getDefaultMMHost();
     return getMexMMHost();
 }
 
@@ -101,7 +103,7 @@ std::string SlippiMatchmaking::getMMHostForSearchMode()
  * @return false if the mode should go through Slippi Servers
  */
 /*
-bool SlippiMatchmaking::IsMexMode(bool isCurrentGameMex, OnlinePlayMode mode)
+bool Matchmaking::IsMexMode(bool isCurrentGameMex, OnlinePlayMode mode)
 {
 	if (!isCurrentGameMex)
 		return false;
@@ -117,7 +119,7 @@ bool SlippiMatchmaking::IsMexMode(bool isCurrentGameMex, OnlinePlayMode mode)
 }
 */
 
-void SlippiMatchmaking::FindMatch(MatchSearchSettings settings)
+void Matchmaking::FindMatch(MatchSearchSettings settings)
 {
 	// We do this here again because an instance could already be created and
 	// without this, executing FindMatch could drop custom mm players into
@@ -131,38 +133,46 @@ void SlippiMatchmaking::FindMatch(MatchSearchSettings settings)
 
 	m_errorMsg = "";
 	m_state = ProcessState::INITIALIZING;
-	m_matchmakeThread = std::thread(&SlippiMatchmaking::MatchmakeThread, this);
+	m_matchmakeThread = std::thread(&Matchmaking::MatchmakeThread, this);
 }
 
-SlippiMatchmaking::ProcessState SlippiMatchmaking::GetMatchmakeState()
+Matchmaking::ProcessState Matchmaking::GetMatchmakeState()
 {
 	return m_state;
 }
 
-std::string SlippiMatchmaking::GetErrorMessage()
+void Matchmaking::SetMatchmakeState(ProcessState state)
+{
+  m_state = state;
+}
+
+std::string Matchmaking::GetErrorMessage()
 {
 	return m_errorMsg;
 }
 
-bool SlippiMatchmaking::IsSearching()
+bool Matchmaking::IsSearching()
 {
 	return searchingStates.count(m_state) != 0;
 }
 
-/*
-std::unique_ptr<SlippiNetplayClient> SlippiMatchmaking::GetNetplayClient()
+bool Matchmaking::IsHost()
 {
-	return std::move(m_netplayClient);
-}
-*/
-
-bool SlippiMatchmaking::IsFixedRulesMode(OnlinePlayMode mode)
-{
-	return mode == SlippiMatchmaking::OnlinePlayMode::UNRANKED ||
-		mode == SlippiMatchmaking::OnlinePlayMode::RANKED;
+  return m_isHost;
 }
 
-void SlippiMatchmaking::sendMessage(json msg)
+u16 Matchmaking::GetLocalPort()
+{
+  return m_hostPort;
+}
+
+bool Matchmaking::IsFixedRulesMode(OnlinePlayMode mode)
+{
+	return mode == Matchmaking::OnlinePlayMode::UNRANKED ||
+		mode == Matchmaking::OnlinePlayMode::RANKED;
+}
+
+void Matchmaking::sendMessage(json msg)
 {
 	enet_uint32 flags = ENET_PACKET_FLAG_RELIABLE;
 	u8 channelId = 0;
@@ -173,7 +183,7 @@ void SlippiMatchmaking::sendMessage(json msg)
 	enet_peer_send(m_server, channelId, epac);
 }
 
-int SlippiMatchmaking::receiveMessage(json &msg, int timeoutMs)
+int Matchmaking::receiveMessage(json &msg, int timeoutMs)
 {
 	int hostServiceTimeoutMs = 250;
 
@@ -215,7 +225,7 @@ int SlippiMatchmaking::receiveMessage(json &msg, int timeoutMs)
 	return -1;
 }
 
-void SlippiMatchmaking::MatchmakeThread()
+void Matchmaking::MatchmakeThread()
 {
 	while (IsSearching())
 	{
@@ -237,7 +247,7 @@ void SlippiMatchmaking::MatchmakeThread()
 	terminateMmConnection();
 }
 
-void SlippiMatchmaking::disconnectFromServer()
+void Matchmaking::disconnectFromServer()
 {
 	isMmConnected = false;
 
@@ -267,7 +277,7 @@ void SlippiMatchmaking::disconnectFromServer()
 	m_server = nullptr;
 }
 
-void SlippiMatchmaking::terminateMmConnection()
+void Matchmaking::terminateMmConnection()
 {
 	// Disconnect from server
 	disconnectFromServer();
@@ -280,7 +290,7 @@ void SlippiMatchmaking::terminateMmConnection()
 	}
 }
 
-void SlippiMatchmaking::startMatchmaking()
+void Matchmaking::startMatchmaking()
 {
 	// I don't understand why I have to do this... if I don't do this, rand always returns the
 	// same value
@@ -292,8 +302,10 @@ void SlippiMatchmaking::startMatchmaking()
 	{
 		bool customPort = SConfig::GetInstance().m_slippiForceNetplayPort;
 
-		if (customPort)
+		if (customPort) {
 			m_hostPort = SConfig::GetInstance().m_slippiNetplayPort;
+            INFO_LOG(BRAWLBACK, "Using custom port: %i\n", m_hostPort);
+        }
 		else
 			m_hostPort = 41000 + (generator() % 10000);
 		ERROR_LOG(BRAWLBACK, "[Matchmaking] Port to use: %d...", m_hostPort);
@@ -440,10 +452,12 @@ void SlippiMatchmaking::startMatchmaking()
 	        {"mode", m_searchSettings.mode},
 	        {"connectCode", connectCodeBuf},
 	        {"game", {
-                {"id", SConfig::GetInstance().GetGameID()},
-                {"ex_id", SConfig::GetInstance().GetGameTDBID()},
-	            {"revision", SConfig::GetInstance().GetRevision()},
-                {"type", 0},// GameType::Other
+                //{"id", SConfig::GetInstance().GetGameID()},
+                {"id", "RSBE01"},
+                //{"ex_id", SConfig::GetInstance().GetGameID()},
+                {"ex_id", "RSBE01"},
+	              {"revision", SConfig::GetInstance().GetRevision()},
+                {"type", 1},// GameType::VANILLA
                 {"name", SConfig::GetInstance().GetTitleName()},
 	        }}
 	};
@@ -485,7 +499,12 @@ void SlippiMatchmaking::startMatchmaking()
 	ERROR_LOG(BRAWLBACK, "[Matchmaking] Request ticket success");
 }
 
-void SlippiMatchmaking::handleMatchmaking()
+void Matchmaking::handleConnecting()
+{
+  // Don't do anything, for now it's being handled on a thread on EXI
+}
+
+void Matchmaking::handleMatchmaking()
 {
 	// Deal with class shut down
 	if (m_state != ProcessState::MATCHMAKING)
@@ -561,7 +580,7 @@ void SlippiMatchmaking::handleMatchmaking()
 			if (isLocal)
 			{
 				std::vector<std::string> localIpParts = SplitString(el.value("ipAddress", "1.1.1.1:123"), ':');
-				
+
 				localExternalIp = localIpParts[0];
 				m_localPlayerIndex = playerInfo.port - 1;
 			}
@@ -613,16 +632,23 @@ void SlippiMatchmaking::handleMatchmaking()
 	if (m_allowedStages.empty())
 	{
 		// Default case, shouldn't ever really be hit but it's here just in case
-		m_allowedStages.push_back(0x3); // Pokemon
-		m_allowedStages.push_back(0x8); // Yoshi's Story
-		m_allowedStages.push_back(0x1C); // Dream Land
-		m_allowedStages.push_back(0x1F); // Battlefield
-		m_allowedStages.push_back(0x20); // Final Destination
+		m_allowedStages.push_back(0x1); // Battlefield
+		m_allowedStages.push_back(0x2); // FD 
+		m_allowedStages.push_back(0x3); // Delfino's Secret
+		m_allowedStages.push_back(0x5); // Metal Cavern
+		//m_allowedStages.push_back(0x0D); // Yoshi's Island
+        //m_allowedStages.push_back(0x2A); // Yoshi's Story
+		m_allowedStages.push_back(0x1C); // Wario land
+        //m_allowedStages.push_back(0x2D); // Dream land
+        m_allowedStages.push_back(0x2E); // PS2
+        //m_allowedStages.push_back(0x23); // Green hill zone
+        //m_allowedStages.push_back(0x21); // Smashville
+
 
 		// Add FoD if singles
 		if (m_playerInfo.size() == 2)
 		{
-			m_allowedStages.push_back(0x2); // FoD
+			//m_allowedStages.push_back(0x1F); // FoD
 		}
 	}
 
@@ -633,22 +659,32 @@ void SlippiMatchmaking::handleMatchmaking()
 	ERROR_LOG(BRAWLBACK, "[Matchmaking] Opponent found. isDecider: %s", m_isHost ? "true" : "false");
 }
 
-int SlippiMatchmaking::LocalPlayerIndex()
+int Matchmaking::LocalPlayerIndex()
 {
 	return m_localPlayerIndex;
 }
 
-std::vector<SlippiMatchmaking::UserInfo> SlippiMatchmaking::GetPlayerInfo()
+std::vector<UserInfo> Matchmaking::GetPlayerInfo()
 {
 	return m_playerInfo;
 }
 
-std::vector<u16> SlippiMatchmaking::GetStages()
+std::vector<u16> Matchmaking::GetStages()
 {
 	return m_allowedStages;
 }
 
-std::string SlippiMatchmaking::GetPlayerName(u8 port)
+u16 Matchmaking::GetRandomStage() {
+    int randStageIdx = generator() % m_allowedStages.size();
+    for (u16 stageID : m_allowedStages) {
+        INFO_LOG(BRAWLBACK, "Allowed stage id: %u\n", (unsigned int)stageID);
+    }
+    INFO_LOG(BRAWLBACK, "rand stage idx chosen: %i\n", randStageIdx);
+    INFO_LOG(BRAWLBACK, "rand stage id chosen: %u\n", (unsigned int)m_allowedStages[randStageIdx]);
+    return m_allowedStages[randStageIdx];
+}
+
+std::string Matchmaking::GetPlayerName(u8 port)
 {
 	if (port >= m_playerInfo.size())
 	{
@@ -657,7 +693,7 @@ std::string SlippiMatchmaking::GetPlayerName(u8 port)
 	return m_playerInfo[port].displayName;
 }
 
-u8 SlippiMatchmaking::RemotePlayerCount()
+u8 Matchmaking::RemotePlayerCount()
 {
 	if (m_playerInfo.size() == 0)
 		return 0;
@@ -665,100 +701,20 @@ u8 SlippiMatchmaking::RemotePlayerCount()
 	return (u8)m_playerInfo.size() - 1;
 }
 
-void SlippiMatchmaking::handleConnecting()
-{
-	auto userInfo = m_user;
+std::vector<std::string> Matchmaking::GetRemoteIPAddresses() {
+    std::vector<std::string> addrs;
+    for (int i = 0; i < m_remoteIps.size(); i++)
+    {
+        addrs.push_back(SplitString(m_remoteIps[i], ':')[0]);
+    }
+    return addrs;
+}
 
-	m_isSwapAttempt = false;
-	//m_netplayClient = nullptr;
-
-	u8 remotePlayerCount = (u8)m_remoteIps.size();
-	std::vector<std::string> remoteParts;
-	std::vector<std::string> addrs;
-	std::vector<u16> ports;
-	for (int i = 0; i < m_remoteIps.size(); i++)
-	{
-		remoteParts.clear();
-        remoteParts = SplitString(m_remoteIps[i], ':');
-		addrs.push_back(remoteParts[0]);
-		ports.push_back(std::stoi(remoteParts[1]));
-	}
-
-	std::stringstream ipLog;
-	ipLog << "Remote player IPs: ";
-	for (int i = 0; i < m_remoteIps.size(); i++)
-	{
-		ipLog << m_remoteIps[i] << ", ";
-	}
-	INFO_LOG(BRAWLBACK, "[Matchmaking] My port: %d || %s", m_hostPort, ipLog.str());
-
-	// Is host is now used to specify who the decider is
-    
-    // TODO/CLIFFHANGER (pine): Fix... lol
-    // this is supposed to 
-	auto client = std::make_unique<SlippiNetplayClient>(addrs, ports, remotePlayerCount, m_hostPort, m_isHost,
-	                                                    m_localPlayerIndex);
-
-	while (!m_netplayClient)
-	{
-		auto status = client->GetSlippiConnectStatus();
-		if (status == SlippiConnectStatus::NET_CONNECT_STATUS_INITIATED)
-		{
-			INFO_LOG(BRAWLBACK, "[Matchmaking] Connection not yet successful");
-			Common::SleepCurrentThread(500);
-
-			// Deal with class shut down
-			if (m_state != ProcessState::OPPONENT_CONNECTING)
-				return;
-
-			continue;
-		}
-		else if (status == SlippiConnectStatus::NET_CONNECT_STATUS_FAILED &&
-		         m_searchSettings.mode == SlippiMatchmaking::OnlinePlayMode::TEAMS)
-		{
-			// If we failed setting up a connection in teams mode, show a detailed error about who we had issues
-			// connecting to.
-			ERROR_LOG(BRAWLBACK, "[Matchmaking] Failed to connect to players");
-			m_state = ProcessState::ERROR_ENCOUNTERED;
-			m_errorMsg = "Timed out waiting for other players to connect";
-			auto failedConns = client->GetFailedConnections();
-			if (!failedConns.empty())
-			{
-				std::stringstream err;
-				err << "Could not connect to players: ";
-				for (int i = 0; i < failedConns.size(); i++)
-				{
-					int p = failedConns[i];
-					if (p >= m_localPlayerIndex)
-						p++;
-
-					err << m_playerInfo[p].displayName;
-					if (i < failedConns.size() - 1)
-					{
-						err << ", ";
-					}
-				}
-				m_errorMsg = err.str();
-			}
-
-			return;
-		}
-		else if (status != SlippiConnectStatus::NET_CONNECT_STATUS_CONNECTED)
-		{
-			ERROR_LOG(BRAWLBACK, "[Matchmaking] Connection attempt failed, looking for someone else.");
-
-			// Return to the start to get a new ticket to find someone else we can hopefully connect with
-			m_netplayClient = nullptr;
-			m_state = ProcessState::INITIALIZING;
-			return;
-		}
-
-		ERROR_LOG(BRAWLBACK, "[Matchmaking] Connection success!");
-
-		// Successful connection
-		m_netplayClient = std::move(client);
-	}
-
-	// Connection success, our work is done
-	m_state = ProcessState::CONNECTION_SUCCESS;
+std::vector<u16> Matchmaking::GetRemotePorts() {
+    std::vector<u16> ports;
+    for (int i = 0; i < m_remoteIps.size(); i++)
+    {
+        ports.push_back(std::stoi(SplitString(m_remoteIps[i], ':')[1]));
+    }
+    return ports;
 }

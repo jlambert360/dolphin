@@ -1,4 +1,4 @@
-#include "Netplay.h"
+#include "Core/Brawlback/Netplay/Netplay.h"
 
 #include <algorithm>
 #include <fstream>
@@ -7,7 +7,6 @@
 #include "Common/CommonTypes.h"
 #include "Common/ENetUtil.h"
 #include "Common/MsgHandler.h"
-#include "Common/Timer.h"
 #include "Core/ConfigManager.h"
 #include "Core/Core.h"
 #include "VideoCommon/VideoConfig.h"
@@ -67,7 +66,7 @@ void BrawlbackNetplay::BroadcastGameSettings(ENetHost* server, Match::GameSettin
     settingsPckt.append(settings, sizeof(Match::GameSettings));
 
     this->BroadcastPacket(settingsPckt, ENET_PACKET_FLAG_RELIABLE, server);
-    INFO_LOG(BRAWLBACK, "Sent game settings data packet");
+    INFO_LOG(BRAWLBACK, "Sent game settings data packet\n");
 }
 
 
