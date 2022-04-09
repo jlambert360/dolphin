@@ -85,8 +85,8 @@ private:
     
     // --- Rollback
     Match::RollbackInfo rollbackInfo = Match::RollbackInfo();
-    void SetupRollback(u32 frame);
-    void HandleLocalInputsDuringPrediction(u32 frame, u8 playerIdx);
+    void SetupRollback(u32 currentFrame, u32 rollbackEndFrame);
+    std::optional<Match::PlayerFrameData> HandleInputPrediction(u32 frame, u8 playerIdx);
     // -------------------------------
 
     void connectToOpponent();
@@ -113,8 +113,6 @@ private:
 
     // remote player input history (indexes are player indexes)
     std::array<PlayerFrameDataQueue, MAX_NUM_PLAYERS> remotePlayerFrameData = {};
-    // array of players - key is current frame, val is ptr to that frame's (player)framedata
-    std::array<std::unordered_map<u32, Match::PlayerFrameData*>, MAX_NUM_PLAYERS> remotePlayerFrameDataMap = {};
     // -------------------------------
 
 
