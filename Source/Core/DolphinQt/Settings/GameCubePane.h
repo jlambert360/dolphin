@@ -42,8 +42,15 @@ private:
   QCheckBox* m_skip_main_menu;
   QComboBox* m_language_combo;
 
-  QPushButton* m_slot_buttons[3];
-  QComboBox* m_slot_combos[3];
+  enum
+  {
+    SLOT_A_INDEX,
+    SLOT_SP1_INDEX,
+    SLOT_COUNT
+  };
+
+  QPushButton* m_slot_buttons[SLOT_COUNT];
+  QComboBox* m_slot_combos[SLOT_COUNT];
 
   QCheckBox* m_gba_threads;
   QCheckBox* m_gba_save_rom_path;
