@@ -1129,17 +1129,36 @@ void CEXIBrawlback::handleFighter(double* payload)
 }
 void CEXIBrawlback::handleEndGame()
 {
-  this->curReplaySerialized = json::to_ubjson(this->curReplay);
+  //TODO: when starting game, check the saveReplays flag and doin't bother writing to JSON obj
+  // if replays are disabled?
 
-  const auto p1 = std::chrono::system_clock::now();
-  const auto timestamp = std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count();
-  writeToFile("replay_" + std::to_string(timestamp) + ".brba", this->curReplaySerialized.data(),
-              this->curReplaySerialized.size());
+  //TODO: safe to read config here?
+  if (SConfig::GetInstance().m_brawlbackSaveReplays)
+  {
+    this->curReplaySerialized = json::to_ubjson(this->curReplay);
+
+    const auto p1 = std::chrono::system_clock::now();
+    const auto timestamp =
+        std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count();
+
+    auto replaydir = SConfig::GetInstance().m_brawlbackReplayDir;
+    if (fs::is_directory(replaydir) || fs::create_directory(replaydir))
+    {
+      auto filename = fmt::format(FMT_STRING("{}/replay_{}.brba"), replaydir, timestamp);
+      writeToFile(filename, this->curReplaySerialized.data(), this->curReplaySerialized.size());
+    }
+    else
+    {
+      auto error_string = fmt::format(FMT_STRING("Failed to create replay directory: {}"), replaydir);
+      ERROR_LOG(BRAWLBACK, error_string.c_str());
+    }
+  }
 }
 void CEXIBrawlback::handleGetNumberReplayFiles()
 {
-  std::string path = "./";
-  for (const auto& entry : fs::directory_iterator(path))
+  //TODO: is it safe to read from the config here? could it be written to from another thread?
+  const auto replay_dir = SConfig::GetInstance().m_brawlbackReplayDir;
+  for (const auto& entry : fs::directory_iterator(replay_dir))
   {
     if (entry.path().string().contains("replay_"))
     {
