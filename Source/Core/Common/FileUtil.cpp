@@ -904,6 +904,7 @@ std::string GetHomeDirectory()
     const char* home = getenv("USERPROFILE");
     homeDir = std::string(home) + "\\Documents";
   }
+  std::replace(homeDir.begin(), homeDir.end(), '\\', '/');
 #else
   const char* home = getenv("HOME");
   homeDir = std::string(home);
