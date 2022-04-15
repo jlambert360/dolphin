@@ -40,8 +40,8 @@ private:
     // REPLAYS
     json curReplay;
     std::vector<u8> curReplaySerialized;
-    std::vector<const char*> replays;
-    std::vector<const char*> replayNames;
+    std::vector<std::string> replays;
+    std::vector<std::string> replayNames;
     int curIndex;
     int curFrame;
     void handleNumPlayers(int* payload);
@@ -63,7 +63,7 @@ private:
     void handleGetNumberReplayFiles();
     void handleGetReplayFilesSize();
     void handleGetReplayFilesNamesSize();
-    void handleGetReplayFilesNames();
+    void handleGetReplayFilesName(u8 index);
     void handleGetReplayFiles();
 
     template <typename T>

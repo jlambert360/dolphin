@@ -450,6 +450,15 @@ namespace Brawlback {
             return std::vector<u8>(ptr, ptr + sizeof(T));
         }
 
+        template <class T>
+        T swap_endian(T in)
+        {
+            char* const p = reinterpret_cast<char*>(&in);
+            for (size_t i = 0; i < sizeof(T) / 2; ++i)
+              std::swap(p[i], p[sizeof(T) - i - 1]);
+            return in;
+        }
+
         void fillByteVectorWithBuffer(std::vector<u8>& vec, u8* buf, size_t size);
     }
     namespace Sync {
@@ -474,4 +483,9 @@ namespace Brawlback {
         void DumpMem(AddressSpace::Type memType, const std::string& dumpPath);
     }
 
+    namespace ReplayFiles
+    {
+        void writeToFile(std::string filename, u8* ptr, size_t len);
+        std::vector<u8> read_vector_from_disk(std::string file_path);
+    }
 }

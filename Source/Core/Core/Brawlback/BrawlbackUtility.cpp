@@ -74,9 +74,6 @@ namespace Brawlback
                 idx++;
             }
         }
-
-
-        
     }
 
     namespace Sync {
@@ -180,4 +177,19 @@ namespace Brawlback
         }
     }
 
+    namespace ReplayFiles {
+        void writeToFile(std::string filename, u8* ptr, size_t len)
+        {
+          std::ofstream fp;
+          fp.open(filename, std::ios::out | std::ios::binary);
+          fp.write((char*)ptr, len);
+        }
+        std::vector<u8> read_vector_from_disk(std::string file_path)
+        {
+          std::ifstream instream(file_path, std::ios::in | std::ios::binary);
+          std::vector<u8> data((std::istreambuf_iterator<char>(instream)),
+                               std::istreambuf_iterator<char>());
+          return data;
+        }
+    }
 }
