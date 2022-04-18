@@ -27,6 +27,7 @@ static_assert(FRAME_DELAY + MAX_ROLLBACK_FRAMES >= 6); // frames of "compensatio
 
 // number of max FrameData's to keep in the (remote) queue
 #define FRAMEDATA_MAX_QUEUE_SIZE 15 
+static_assert(FRAMEDATA_MAX_QUEUE_SIZE > MAX_ROLLBACK_FRAMES);
 // update ping display every X frames
 #define PING_DISPLAY_INTERVAL 30
 
@@ -264,18 +265,11 @@ namespace Brawlback {
         return input > Max ? Max : ( input < Min ? Min : input );
     }
 
-    #ifndef MAX
-    #define MAX(x, y) (((x) > (y)) ? (x) : (y))
-    #endif
 
-    #ifndef MIN
-    #define MIN(x, y) (((x) < (y)) ? (x) : (y))
-    #endif
-
+    inline int MAX(int x, int y) { return (((x) > (y)) ? (x) : (y)); }
+    inline int MIN(int x, int y) { return (((x) < (y)) ? (x) : (y)); }
     // 1 if in range (inclusive), 0 otherwise
-    #ifndef RANGE
-    #define RANGE(i, min, max) ((i < min) || (i > max) ? 0 : 1)
-    #endif
+    inline int RANGE(int i, int min, int max) { return ((i < min) || (i > max) ? 0 : 1); }
 
     namespace Dump {
         void DoMemDumpIteration(int& dump_num);

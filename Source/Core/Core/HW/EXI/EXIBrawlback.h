@@ -31,7 +31,7 @@ private:
     std::vector<u8> read_queue = {};
 
 
-    // DMA handlers
+    // --- DMA handlers
     void handleCaptureSavestate(u8* data);
     void handleLoadSavestate(u8* data);
     void handleLocalPadData(u8* data);
@@ -46,7 +46,6 @@ private:
 
 
     // --- Net
-    void MatchmakingThreadFunc();
     void NetplayThreadFunc();
     void ProcessNetReceive(ENetEvent* event);
     void ProcessRemoteFrameData(Match::PlayerFrameData* framedata, u8 numFramedatas);
@@ -55,13 +54,21 @@ private:
     void ProcessFrameAck(FrameAck* frameAck);
     u32 GetLatestRemoteFrame();
     ENetHost* server = nullptr;
-    Matchmaking::MatchSearchSettings lastSearch;
     std::thread netplay_thread;
-    std::thread matchmaking_thread;
     std::unique_ptr<BrawlbackNetplay> netplay;
-    std::unique_ptr<Matchmaking> matchmaking;
 
     bool isConnected = false;
+    // -------------------------------
+
+
+
+    // --- Matchmaking
+    void connectToOpponent();
+    void MatchmakingThreadFunc();
+    Brawlback::UserInfo getUserInfo();
+    Matchmaking::MatchSearchSettings lastSearch;
+    std::unique_ptr<Matchmaking> matchmaking;
+    std::thread matchmaking_thread;
     // -------------------------------
 
 
@@ -70,26 +77,23 @@ private:
     // --- Game info
     bool isHost = true;
     int localPlayerIdx = -1;
-    u8 numPlayers = -1;
+    u8 numPlayers = 0;
     bool hasGameStarted = false;
     std::unique_ptr<Match::GameSettings> gameSettings;
     // -------------------------------
 
-    Brawlback::UserInfo getUserInfo();
 
     // --- Time sync
-    void DropAckedInputs(u32 currFrame);
     std::unique_ptr<TimeSync> timeSync;
     // -------------------------------
 
     
     // --- Rollback
     Match::RollbackInfo rollbackInfo = Match::RollbackInfo();
-    void SetupRollback(u32 currentFrame, u32 rollbackEndFrame);
+    void SetupRollback(u32 currentFrame, u32 confirmFrame);
     std::optional<Match::PlayerFrameData> HandleInputPrediction(u32 frame, u8 playerIdx);
     // -------------------------------
 
-    void connectToOpponent();
 
 
     // --- Savestates
@@ -106,12 +110,10 @@ private:
     std::pair<bool, bool> getInputsForGame(Match::FrameData& framedataToSendToGame, u32 frame);
     void storeLocalInputs(Match::PlayerFrameData* localPlayerFramedata);
 
-    // local player input history
+    // local player input history. Always holds FRAMEDATA_MAX_QUEUE_SIZE of past inputs
     PlayerFrameDataQueue localPlayerFrameData = {};
 
-    //std::unordered_map<u32, Match::PlayerFrameData*> localPlayerFrameDataMap = {};
-
-    // remote player input history (indexes are player indexes)
+    // remote player input history (indexes are player indexes). Always holds FRAMEDATA_MAX_QUEUE_SIZE of past inputs
     std::array<PlayerFrameDataQueue, MAX_NUM_PLAYERS> remotePlayerFrameData = {};
     // -------------------------------
 
