@@ -21,7 +21,7 @@
 
 #define FRAME_DELAY 2
 static_assert(FRAME_DELAY >= 1);
-static_assert(FRAME_DELAY + MAX_ROLLBACK_FRAMES >= 6); // frames of "compensation"
+static_assert(FRAME_DELAY + MAX_ROLLBACK_FRAMES >= 6); // minimum frames of "compensation"
 
 #define ROLLBACK_IMPL true
 
@@ -36,17 +36,17 @@ static_assert(FRAMEDATA_MAX_QUEUE_SIZE > MAX_ROLLBACK_FRAMES);
 
 #define GAME_START_FRAME 0
 //#define GAME_FULL_START_FRAME 1
-// before this frame we basically use delay-based netcode to ensure things are synced up
-#define GAME_FULL_START_FRAME 20
+// before this frame we basically use delay-based netcode to ensure things are reasonably synced up before doing rollback stuff
+#define GAME_FULL_START_FRAME 100
 
 #define MAX_REMOTE_PLAYERS 3
 #define MAX_NUM_PLAYERS 4
 #define BRAWLBACK_PORT 7779
 
+#define TIMESYNC_MAX_US_OFFSET 10000 // 60% of a frame
 
+//#define SYNCLOG
 
-// 59.94 Hz (16.66 ms in a frame for 60fps)  ( -- is this accurate? This is the case for melee, idk if it also applies here)
-//#define USEC_IN_FRAME 16683
 
 #define MS_IN_FRAME (1000 / 60)
 #define USEC_IN_FRAME (MS_IN_FRAME*1000)
@@ -254,6 +254,7 @@ namespace Brawlback {
         std::string str_byte(uint8_t byte);
         std::string str_half(u16 half);
         void SyncLog(const std::string& msg);
+        std::string stringifyFramedata(const Match::FrameData& fd, int numPlayers);
         std::string stringifyFramedata(const Match::PlayerFrameData& pfd);
     }
     
