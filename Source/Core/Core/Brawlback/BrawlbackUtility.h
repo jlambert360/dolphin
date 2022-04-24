@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <array>
 #include <fstream>
+#include <optional>
 
 #include "Common/FileUtil.h"
 #include "Common/CommonTypes.h"
@@ -10,32 +11,39 @@
 #include "Common/Logging/Log.h"
 #include "Common/Logging/LogManager.h"
 #include "SlippiUtility.h"
-#include "Core/Brawlback/Brawltypes.h"
+#include "Brawltypes.h"
+#include "Savestate.h"
 
-// must be >= 1
-#define FRAME_DELAY 3
-static_assert(FRAME_DELAY + MAX_ROLLBACK_FRAMES >= 6); // 6 frames of "compensation" covers ~190 ping which is more than sufficient imo
+
+
+#define FRAME_DELAY 2
+static_assert(FRAME_DELAY >= 1);
+static_assert(FRAME_DELAY + MAX_ROLLBACK_FRAMES >= 6); // minimum frames of "compensation"
 
 #define ROLLBACK_IMPL true
 
-// number of max FrameData's to keep in the queue
-#define FRAMEDATA_MAX_QUEUE_SIZE 30 
+// number of max FrameData's to keep in the (remote) queue
+#define FRAMEDATA_MAX_QUEUE_SIZE 15 
+static_assert(FRAMEDATA_MAX_QUEUE_SIZE > MAX_ROLLBACK_FRAMES);
 // update ping display every X frames
-#define PING_DISPLAY_INTERVAL 60
+#define PING_DISPLAY_INTERVAL 30
 
+// check clock desynchronization every X frames
 #define ONLINE_LOCKSTEP_INTERVAL 30
+
 #define GAME_START_FRAME 0
 //#define GAME_FULL_START_FRAME 1
-#define GAME_FULL_START_FRAME 250
+// before this frame we basically use delay-based netcode to ensure things are reasonably synced up before doing rollback stuff
+#define GAME_FULL_START_FRAME 100
 
 #define MAX_REMOTE_PLAYERS 3
 #define MAX_NUM_PLAYERS 4
 #define BRAWLBACK_PORT 7779
 
+#define TIMESYNC_MAX_US_OFFSET 10000 // 60% of a frame
 
+//#define SYNCLOG
 
-// 59.94 Hz (16.66 ms in a frame for 60fps)  ( -- is this accurate? This is the case for melee, idk if it also applies here)
-//#define USEC_IN_FRAME 16683
 
 #define MS_IN_FRAME (1000 / 60)
 #define USEC_IN_FRAME (MS_IN_FRAME*1000)
@@ -375,7 +383,7 @@ namespace Brawlback {
 
         struct RollbackInfoImpl {
             RollbackInfo _rollbackInfo;
-            std::vector<SlippiUtility::Savestate::PreserveBlockImpl> preserveBlocks;
+            //std::vector<SlippiUtility::Savestate::PreserveBlockImpl> preserveBlocks;
 
             RollbackInfoImpl() {
                 Reset();
@@ -388,7 +396,7 @@ namespace Brawlback {
                 _rollbackInfo.pastFrameDataPopulated = false;
                 memset(_rollbackInfo.pastFrameDatas, 0, sizeof(FrameData) * MAX_ROLLBACK_FRAMES);
                 _rollbackInfo.hasPreserveBlocks = false;
-                preserveBlocks = {};
+                //preserveBlocks = {};
             }
 
         };
@@ -421,6 +429,7 @@ namespace Brawlback {
         std::string str_byte(uint8_t byte);
         std::string str_half(u16 half);
         void SyncLog(const std::string& msg);
+        std::string stringifyFramedata(const FrameData& fd, int numPlayers);
         std::string stringifyFramedata(const Match::PlayerFrameDataImpl& pfd);
     }
     
@@ -429,10 +438,18 @@ namespace Brawlback {
     Match::PlayerFrameDataImpl* findInPlayerFrameDataQueue(const PlayerFrameDataQueue& queue,
                                                            u32 frame);
 
+    int SavestateChecksum(std::vector<ssBackupLoc>* backupLocs);
+
     template <typename T>
     T Clamp(T input, T Max, T Min) {
         return input > Max ? Max : ( input < Min ? Min : input );
     }
+
+
+    inline int MAX(int x, int y) { return (((x) > (y)) ? (x) : (y)); }
+    inline int MIN(int x, int y) { return (((x) < (y)) ? (x) : (y)); }
+    // 1 if in range (inclusive), 0 otherwise
+    inline int RANGE(int i, int min, int max) { return ((i < min) || (i > max) ? 0 : 1); }
 
     namespace Dump {
         void DoMemDumpIteration(int& dump_num);

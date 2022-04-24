@@ -1,5 +1,5 @@
 #pragma once
-#include "include/brawlback-exi-structures/RollbackInfo.h"
+#include "include/brawlback-exi-structures/exi-structures.h"
 
 enum PADButtonBits : u16
 {
