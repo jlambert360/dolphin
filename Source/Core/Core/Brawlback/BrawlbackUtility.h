@@ -13,7 +13,7 @@
 #include "SlippiUtility.h"
 #include "Brawltypes.h"
 #include "Savestate.h"
-
+#include <Core/Brawlback/include/brawlback-exi-structures/ExiStructures.h>
 
 
 #define FRAME_DELAY 2
@@ -344,7 +344,7 @@ namespace Brawlback {
 
     // checks if the specified `button` is held down based on the buttonBits bitfield
     bool isButtonPressed(u16 buttonBits, PADButtonBits button);
-    void Reset(RollbackInfo& _rollbackInfo);
+    void ResetRollbackInfo(RollbackInfo& rollbackInfo);
     namespace Mem {
         void print_byte(uint8_t byte);
         void print_half(u16 half);
@@ -364,6 +364,7 @@ namespace Brawlback {
         std::string str_half(u16 half);
         void SyncLog(const std::string& msg);
         std::string stringifyFramedata(const PlayerFrameData& pfd);
+        std::string stringifyFramedata(const FrameData& fd, int numPlayers);
     }
     
     typedef std::deque<std::unique_ptr<PlayerFrameData>> PlayerFrameDataQueue;
