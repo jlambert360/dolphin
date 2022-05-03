@@ -1,7 +1,7 @@
 #include "BrawlbackUtility.h"
 
 #include "VideoCommon/OnScreenDisplay.h"
-
+#include <Core/HW/Memmap.h>
 
 namespace Brawlback
 {
@@ -26,7 +26,7 @@ namespace Brawlback
                 return x.get();
             }
         }
-        return nullptr;
+        return fletcher32_checksum((short*)sums.data(), sizeof(int) * sums.size());
     }
 
     namespace Match {
@@ -116,15 +116,16 @@ namespace Brawlback
         }
 
         void Sync::SyncLog(const std::string& msg) {
-            std::fstream synclogFile;
-            File::OpenFStream(synclogFile, getSyncLogFilePath(), std::ios_base::out | std::ios_base::app);
-            synclogFile << msg;
-            synclogFile.close();
+            if (!msg.empty()) {
+                std::fstream synclogFile;
+                File::OpenFStream(synclogFile, getSyncLogFilePath(), std::ios_base::out | std::ios_base::app);
+                synclogFile << "[Sync] " << msg << "[/Sync]\n";
+                synclogFile.close();
+            }
         }
 
         std::string Sync::stringifyFramedata(const PlayerFrameData& pfd) {
             std::string ret;
-
 
             std::string info;
             info.append("[Frame " + std::to_string(pfd.frame) + "] [P" +
@@ -154,6 +155,19 @@ namespace Brawlback
 
             ret.append(info);
             ret.append(inputs);
+            return ret;
+        }
+
+        std::string Sync::stringifyFramedata(const FrameData& fd, int numPlayers) {
+            std::string ret;
+            for (int i = 0; i < numPlayers; i++) {
+                const PlayerFrameData& pfd = fd.playerFrameDatas[i];
+                if (pfd.frame != 0) {
+                    Match::PlayerFrameDataImpl p;
+                    p._playerFrameData = pfd;
+                    ret.append(Sync::stringifyFramedata(p));
+                }
+            }
             return ret;
         }
 
