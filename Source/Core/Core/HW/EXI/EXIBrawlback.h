@@ -77,9 +77,9 @@ private:
     void MatchmakingThreadFunc();
     void NetplayThreadFunc();
     void ProcessNetReceive(ENetEvent* event);
-    void ProcessRemoteFrameData(Match::PlayerFrameDataImpl* framedata, u8 numFramedatas);
-    void ProcessIndividualRemoteFrameData(Match::PlayerFrameDataImpl* framedata);
-    void ProcessGameSettings(Match::GameSettingsImpl* opponentGameSettings);
+    void ProcessRemoteFrameData(PlayerFrameData* framedata, u8 numFramedatas);
+    void ProcessIndividualRemoteFrameData(PlayerFrameData* framedata);
+    void ProcessGameSettings(GameSettings* opponentGameSettings);
     void ProcessFrameAck(FrameAck* frameAck);
     u32 GetLatestRemoteFrame();
     ENetHost* server = nullptr;
@@ -100,7 +100,7 @@ private:
     int localPlayerIdx = -1;
     u8 numPlayers = -1;
     bool hasGameStarted = false;
-    std::unique_ptr<Match::GameSettingsImpl> gameSettings;
+    std::unique_ptr<GameSettings> gameSettings;
     // -------------------------------
 
     Brawlback::UserInfo getUserInfo();
@@ -112,7 +112,7 @@ private:
 
     
     // --- Rollback
-    Match::RollbackInfoImpl rollbackInfo = Match::RollbackInfoImpl();
+    RollbackInfo rollbackInfo = RollbackInfo();
     void SetupRollback(u32 frame);
     void HandleLocalInputsDuringPrediction(u32 frame, u8 playerIdx);
     // -------------------------------
@@ -131,8 +131,8 @@ private:
 
     // --- Framedata (player inputs)
     void handleSendInputs(u32 frame);
-    std::pair<bool, bool> getInputsForGame(Match::FrameDataImpl& framedataToSendToGame, u32 frame);
-    void storeLocalInputs(Match::PlayerFrameDataImpl* localPlayerFramedata);
+    std::pair<bool, bool> getInputsForGame(FrameData& framedataToSendToGame, u32 frame);
+    void storeLocalInputs(PlayerFrameData* localPlayerFramedata);
 
     // local player input history
     PlayerFrameDataQueue localPlayerFrameData = {};
@@ -142,7 +142,7 @@ private:
     // remote player input history (indexes are player indexes)
     std::array<PlayerFrameDataQueue, MAX_NUM_PLAYERS> remotePlayerFrameData = {};
     // array of players - key is current frame, val is ptr to that frame's (player)framedata
-    std::array<std::unordered_map<u32, Match::PlayerFrameDataImpl*>, MAX_NUM_PLAYERS> remotePlayerFrameDataMap = {};
+    std::array<std::unordered_map<u32, PlayerFrameData*>, MAX_NUM_PLAYERS> remotePlayerFrameDataMap = {};
     // -------------------------------
 
 
