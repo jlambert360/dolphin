@@ -13,7 +13,7 @@
 #include "SlippiUtility.h"
 #include "Brawltypes.h"
 #include "Savestate.h"
-#include <Core/Brawlback/include/brawlback-exi-structures/ExiStructures.h>
+#include "brawlback-exi-structures/ExiStructures.h"
 
 
 #define FRAME_DELAY 2
@@ -327,16 +327,7 @@ namespace Brawlback {
     };
     namespace Match
     {   
-        struct Game {
-            u32 version;
-            GameSettings gameSettings;
-            u32 currentFrame;
-            std::unordered_map<int32_t, FrameData*> framesByIndex;
-            std::vector<std::unique_ptr<FrameData>> frames;
-        };
-
         bool isPlayerFrameDataEqual(const PlayerFrameData& p1, const PlayerFrameData& p2);
-        
     }
 
 
