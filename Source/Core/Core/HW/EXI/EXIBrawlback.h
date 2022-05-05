@@ -33,12 +33,18 @@ private:
   void handleLocalPadData(u8* data);
   void handleFindMatch(u8* payload);
   void handleStartMatch(u8* payload);
+  void handleStartReplaysStruct(u8* payload);
+  void handleReplaysStruct(u8* payload);
+  void handleEndOfReplay();
 
   template <typename T>
   void SendCmdToGame(EXICommand cmd, T* payload);
 
   void SendCmdToGame(EXICommand cmd);
   // -------------------------------
+
+  // --- Replays
+  json replayJson;
 
   // --- Net
   void NetplayThreadFunc();

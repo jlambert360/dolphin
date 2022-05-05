@@ -20,6 +20,28 @@ std::mutex remotePadQueueMutex = std::mutex();
 std::mutex localPadQueueMutex = std::mutex();
 // -------------------------------
 
+template <class T>
+T swap_endian(T in)
+{
+  char* const p = reinterpret_cast<char*>(&in);
+  for (size_t i = 0; i < sizeof(T) / 2; ++i)
+    std::swap(p[i], p[sizeof(T) - i - 1]);
+  return in;
+}
+void writeToFile(std::string filename, uint8_t* ptr, size_t len)
+{
+  std::ofstream fp;
+  fp.open(filename, std::ios::out | std::ios::binary);
+  fp.write((char*)ptr, len);
+}
+std::vector<u8> read_vector_from_disk(std::string file_path)
+{
+  std::ifstream instream(file_path, std::ios::in | std::ios::binary);
+  std::vector<u8> data((std::istreambuf_iterator<char>(instream)),
+                       std::istreambuf_iterator<char>());
+  return data;
+}
+
 CEXIBrawlback::CEXIBrawlback()
 {
   INFO_LOG(BRAWLBACK, "------- %s\n", SConfig::GetInstance().GetGameID().c_str());
@@ -1163,6 +1185,63 @@ void CEXIBrawlback::handleStartMatch(u8* payload)
   this->gameSettings = std::make_unique<GameSettings>(*settings);
 }
 
+void CEXIBrawlback::handleStartReplaysStruct(u8* payload)
+{
+  StartReplay* startReplay = (StartReplay*)payload;
+  this->replayJson["start"]["players"]["ftKind"] = startReplay->players->fighterKind;
+  for (int i = 0; i < startReplay->numPlayers; i++)
+  {
+    this->replayJson["start"]["players"]["startPlayerPos"][i]["x"] = startReplay->players[i].startPlayer.xPos;
+    this->replayJson["start"]["players"]["startPlayerPos"][i]["y"] = startReplay->players[i].startPlayer.yPos;
+    this->replayJson["start"]["players"]["startPlayerPos"][i]["z"] = startReplay->players[i].startPlayer.zPos;
+  }
+  this->replayJson["start"]["stage"] = startReplay->stage;
+  this->replayJson["start"]["randomSeed"] = startReplay->randomSeed;
+  this->replayJson["start"]["otherRandomSeed"] = startReplay->otherRandomSeed;
+}
+
+void CEXIBrawlback::handleReplaysStruct(u8* payload)
+{
+  Replay* replay = (Replay*)payload;
+  this->replayJson["frame_" + replay->frameCounter]["persistentFrameCounter"] = replay->persistentFrameCounter;
+  for (int i = 0; i < replay->numItems; i++)
+  {
+    this->replayJson["frame_" + replay->frameCounter]["items"][i]["itemId"] = replay->items[i].itemId;
+    this->replayJson["frame_" + replay->frameCounter]["items"][i]["itemVariant"] = replay->items[i].itemVariant;
+  }
+  for (int i = 0; i < replay->numPlayers; i++)
+  {
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["actionState"] = replay->players[i].actionState;
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["damage"] = replay->players[i].damage;
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["stockCount"] = replay->players[i].stockCount;
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["attack"] = replay->players[i].inputs.attack;
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["cStick"] = replay->players[i].inputs.cStick;
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["dTaunt"] = replay->players[i].inputs.dTaunt;
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["jump"] = replay->players[i].inputs.jump;
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["leftStickX"] = replay->players[i].inputs.leftStickX;
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["leftStickY"] = replay->players[i].inputs.leftStickY;
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["shield"] = replay->players[i].inputs.shield;
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["special"] = replay->players[i].inputs.special;
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["sTaunt"] = replay->players[i].inputs.sTaunt;
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["tapJump"] = replay->players[i].inputs.tapJump;
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["uTaunt"] = replay->players[i].inputs.uTaunt;
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["position"]["x"] = replay->players[i].pos.xPos;
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["position"]["y"] = replay->players[i].pos.yPos;
+    this->replayJson["frame_" + replay->frameCounter]["players"][i]["position"]["z"] = replay->players[i].pos.zPos;
+  }
+}
+
+void CEXIBrawlback::handleEndOfReplay()
+{
+  auto ubjson = json::to_ubjson(this->replayJson);
+
+  const auto p1 = std::chrono::system_clock::now();
+  const auto timestamp =
+      std::chrono::duration_cast<std::chrono::seconds>(p1.time_since_epoch()).count();
+  writeToFile("replay_" + std::to_string(timestamp) + ".brba", ubjson.data(),
+              ubjson.size());
+}
+
 // recieve data from game into emulator
 void CEXIBrawlback::DMAWrite(u32 address, u32 size)
 {
@@ -1209,6 +1288,12 @@ void CEXIBrawlback::DMAWrite(u32 address, u32 size)
     // INFO_LOG(BRAWLBACK, "DMAWrite: CMD_START_MATCH");
     handleStartMatch(payload);
     break;
+  case CMD_REPLAY_GET_START_REPLAYS_STRUCT:
+    handleStartReplaysStruct(payload);
+  case CMD_REPLAY_GET_REPLAYS_STRUCT:
+    handleReplaysStruct(payload);
+  case CMD_REPLAYS_GET_REPLAYS_END:
+    handleEndOfReplay();
 
   // just using these CMD's to track frame times lol
   case CMD_TIMER_START:
