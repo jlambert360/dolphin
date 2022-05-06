@@ -1188,46 +1188,66 @@ void CEXIBrawlback::handleStartMatch(u8* payload)
 void CEXIBrawlback::handleStartReplaysStruct(u8* payload)
 {
   StartReplay* startReplay = (StartReplay*)payload;
-  this->replayJson["start"]["players"]["ftKind"] = startReplay->players->fighterKind;
+  auto start = this->replayJson["start"];
   for (int i = 0; i < startReplay->numPlayers; i++)
   {
-    this->replayJson["start"]["players"]["startPlayerPos"][i]["x"] = startReplay->players[i].startPlayer.xPos;
-    this->replayJson["start"]["players"]["startPlayerPos"][i]["y"] = startReplay->players[i].startPlayer.yPos;
-    this->replayJson["start"]["players"]["startPlayerPos"][i]["z"] = startReplay->players[i].startPlayer.zPos;
+    auto player = start["players"][i];
+    auto replayPlayer = startReplay->players[i];
+    player["ftKind"] = replayPlayer.fighterKind;
+    auto position = player["startPlayerPos"];
+    auto replayPosition = replayPlayer.startPlayer;
+
+    position["x"] = replayPosition.xPos;
+    position["y"] = replayPosition.yPos;
+    position["z"] = replayPosition.zPos;
   }
-  this->replayJson["start"]["stage"] = startReplay->stage;
-  this->replayJson["start"]["randomSeed"] = startReplay->randomSeed;
-  this->replayJson["start"]["otherRandomSeed"] = startReplay->otherRandomSeed;
+  start["stage"] = startReplay->stage;
+  start["randomSeed"] = startReplay->randomSeed;
+  start["otherRandomSeed"] = startReplay->otherRandomSeed;
 }
 
 void CEXIBrawlback::handleReplaysStruct(u8* payload)
 {
   Replay* replay = (Replay*)payload;
-  this->replayJson["frame_" + replay->frameCounter]["persistentFrameCounter"] = replay->persistentFrameCounter;
+  auto frameName = "frame_" + replay->frameCounter;
+  this->replayJson[frameName]["persistentFrameCounter"] = replay->persistentFrameCounter;
   for (int i = 0; i < replay->numItems; i++)
   {
-    this->replayJson["frame_" + replay->frameCounter]["items"][i]["itemId"] = replay->items[i].itemId;
-    this->replayJson["frame_" + replay->frameCounter]["items"][i]["itemVariant"] = replay->items[i].itemVariant;
+    auto item = this->replayJson[frameName]["items"][i];
+    auto replayItem = replay->items[i];
+
+    item["itemId"] = replayItem.itemId;
+    item["itemVariant"] = replayItem.itemVariant;
   }
   for (int i = 0; i < replay->numPlayers; i++)
   {
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["actionState"] = replay->players[i].actionState;
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["damage"] = replay->players[i].damage;
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["stockCount"] = replay->players[i].stockCount;
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["attack"] = replay->players[i].inputs.attack;
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["cStick"] = replay->players[i].inputs.cStick;
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["dTaunt"] = replay->players[i].inputs.dTaunt;
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["jump"] = replay->players[i].inputs.jump;
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["leftStickX"] = replay->players[i].inputs.leftStickX;
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["leftStickY"] = replay->players[i].inputs.leftStickY;
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["shield"] = replay->players[i].inputs.shield;
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["special"] = replay->players[i].inputs.special;
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["sTaunt"] = replay->players[i].inputs.sTaunt;
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["tapJump"] = replay->players[i].inputs.tapJump;
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["inputs"]["uTaunt"] = replay->players[i].inputs.uTaunt;
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["position"]["x"] = replay->players[i].pos.xPos;
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["position"]["y"] = replay->players[i].pos.yPos;
-    this->replayJson["frame_" + replay->frameCounter]["players"][i]["position"]["z"] = replay->players[i].pos.zPos;
+    auto player = this->replayJson[frameName]["players"][i];
+    auto inputs = player["inputs"];
+    auto position = player["position"];
+
+    auto replayPlayer = replay->players[i];
+    auto replayInputs = replayPlayer.inputs;
+    auto replayPosition = replayPlayer.pos;
+
+    player["actionState"] = replayPlayer.actionState;
+    player["damage"] = replayPlayer.damage;
+    player["stockCount"] = replayPlayer.stockCount;
+
+    inputs["attack"] = replayInputs.attack;
+    inputs["cStick"] = replayInputs.cStick;
+    inputs["dTaunt"] = replayInputs.dTaunt;
+    inputs["jump"] = replayInputs.jump;
+    inputs["leftStickX"] = replayInputs.leftStickX;
+    inputs["leftStickY"] = replayInputs.leftStickY;
+    inputs["shield"] = replayInputs.shield;
+    inputs["special"] = replayInputs.special;
+    inputs["sTaunt"] = replayInputs.sTaunt;
+    inputs["tapJump"] = replayInputs.tapJump;
+    inputs["uTaunt"] = replayInputs.uTaunt;
+
+    position["x"] = replayPosition.xPos;
+    position["y"] = replayPosition.yPos;
+    position["z"] = replayPosition.zPos;
   }
 }
 
